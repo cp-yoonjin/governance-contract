@@ -12,6 +12,10 @@ import "./interface/IStaking.sol";
 
 import "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 
+interface IRegistrySet {
+    function setContractDomain(bytes32, address) external returns (bool success);
+}
+
 contract GovImp is
     AGov,
     ReentrancyGuardUpgradeable,
@@ -1322,5 +1326,62 @@ contract GovImp is
 
         modifiedBlock = oldModifiedBlock;
         transferOwnership(oldOwner);
+    }
+
+    function migrateFromLegacy(address oldGov, address stakingAddress, address ballotStorageAddress, address envStorageAddress) external initializer returns (int256) {
+        __ReentrancyGuard_init();
+        __Ownable_init();
+
+        GovImp ogov = GovImp(oldGov);
+        setRegistry(address(ogov.reg()));
+        modifiedBlock = block.number;
+        transferOwnership(ogov.owner());
+
+        unchecked {
+            for (uint256 i = 1; i <= ogov.getMemberLength(); i++) {
+                stakers[i] = ogov.getMember(i);
+                stakerIdx[stakers[i]] = i;
+                voters[i] = stakers[i];
+                voterIdx[voters[i]] = i;
+                rewards[i] = ogov.getReward(i);
+                rewardIdx[rewards[i]] = i;
+                memberLength = i;
+
+                Node memory node;
+                (node.name, node.enode, node.ip, node.port) = ogov.getNode(i);
+                require(
+                    checkNodeInfoChange(
+                        node.name,
+                        node.enode,
+                        node.ip,
+                        node.port,
+                        node
+                    ),
+                    "node info is duplicated"
+                );
+                checkNodeName[node.name] = true;
+                checkNodeEnode[node.enode] = true;
+                checkNodeIpPort[keccak256(abi.encodePacked(node.ip, node.port))] = true;
+                nodes[i] = node;
+                nodeIdxFromMember[stakers[i]] = i;
+                nodeToMember[i] = stakers[i];
+                nodeLength = i;
+                // lastAddProposalTime[stakers[i]] = GovImp(oldGov).lastAddProposalTime(stakers[i]);
+            }
+        }
+
+        ballotLength = ogov.ballotLength();
+        voteLength = ogov.voteLength();
+        ballotInVoting = ogov.getBallotInVoting();
+        // proposal_time_period = GovImp(oldGov).proposal_time_period();
+
+        // set registry
+        IRegistrySet rs = IRegistrySet(address(reg));
+        rs.setContractDomain(GOV_NAME, address(this));
+        rs.setContractDomain(STAKING_NAME, stakingAddress);
+        rs.setContractDomain(BALLOT_STORAGE_NAME, ballotStorageAddress);
+        rs.setContractDomain(ENV_STORAGE_NAME, envStorageAddress);
+
+        return 0;
     }
 }

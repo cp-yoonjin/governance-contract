@@ -354,4 +354,25 @@ contract StakingImp is GovChecker, UUPSUpgradeable, ReentrancyGuardUpgradeable, 
         return _totalLockedBalance;
     }
 
+    function migrateFromLegacy(address registry, address oldGov, address oldStaking) external initializer {
+        require(registry != address(0) && oldGov != address(0) && oldStaking != address(0), "address is the zero address");
+
+        _totalLockedBalance = 0;
+        __ReentrancyGuard_init();
+        __Ownable_init();
+        setRegistry(registry);
+
+        IGov gov = IGov(oldGov);
+        IStaking old = IStaking(oldStaking);
+        unchecked {
+            for (uint256 i = 1; i <= gov.getMemberLength(); i++) {
+                address addr = gov.getMember(i);
+                uint256 amount = old.balanceOf(addr);
+                uint256 locked = old.lockedBalanceOf(addr);
+                _balance[addr] = amount;
+                _lockedBalance[addr] = locked;
+                _totalLockedBalance = _totalLockedBalance + locked;
+            }
+        }
+    }
 }
