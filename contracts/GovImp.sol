@@ -1328,7 +1328,7 @@ contract GovImp is
         transferOwnership(oldOwner);
     }
 
-    function migrateFromLegacy(address oldGov, address stakingAddress, address ballotStorageAddress, address envStorageAddress) external initializer returns (int256) {
+    function migrateFromLegacy(address oldGov, address /*stakingAddress*/, address /*ballotStorageAddress*/, address /*envStorageAddress*/) external initializer returns (int256) {
         __ReentrancyGuard_init();
         __Ownable_init();
 
@@ -1376,11 +1376,13 @@ contract GovImp is
         // proposal_time_period = GovImp(oldGov).proposal_time_period();
 
         // set registry
+        /*
         IRegistrySet rs = IRegistrySet(address(reg));
         rs.setContractDomain(GOV_NAME, address(this));
         rs.setContractDomain(STAKING_NAME, stakingAddress);
         rs.setContractDomain(BALLOT_STORAGE_NAME, ballotStorageAddress);
         rs.setContractDomain(ENV_STORAGE_NAME, envStorageAddress);
+        */
 
         return 0;
     }

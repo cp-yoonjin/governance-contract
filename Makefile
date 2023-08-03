@@ -39,11 +39,11 @@ npm:
 deploy:
 	$(DOCKER_RUN) nodejs node_modules/.bin/hardhat run scripts/deploy.js $(RESET) $(DEST_NETWORK)
 
-gov: WemixGovernance.js
+gov: MetadiumGovernance.js
 
-WemixGovernance.js: build/WemixGovernance.js
+MetadiumGovernance.js: build/MetadiumGovernance.js
 
-build/WemixGovernance.js: build_dir npm build/solc build/solc.sh build/gov.sol
+build/MetadiumGovernance.js: build_dir npm build/solc build/solc.sh build/gov.sol
 	PATH=$(shell pwd)/build:$${PATH} build/solc.sh -r gov=$(CURDIR_SOLC)/contracts -r @openzeppelin=$(CURDIR_SOLC)/node_modules/@openzeppelin build/gov.sol $@
 
 build/gov.sol:
